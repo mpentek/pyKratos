@@ -17,38 +17,43 @@ class Point2DCondition:
         self.geometry = geometry
 
     def GetDofsPerNode(self):
-        return 2
+        return 3
 
                 
     def CalculateLocalSystem(self,ProcessInfo):
         fx = self.geometry[0].GetSolutionStepValue(EXTERNAL_FORCE_X,0) 
         fy = self.geometry[0].GetSolutionStepValue(EXTERNAL_FORCE_Y,0)   
+        moment = self.geometry[0].GetSolutionStepValue(EXTERNAL_MOMENT,0) 
         
-        RHS = zeros(2)  
-        LHS = zeros((2,2))
+        RHS = zeros(3)  
+        LHS = zeros((3,3))
         
         RHS[0] = fx
         RHS[1] = fy
-
+        RHS[2] = moment
+        
         return [LHS, RHS]
 
     # this function returns a list with the node and unkowns to be solved for
     def GetDofList(self):
         unknowns = []
-        unknowns.append(Dof(self.geometry[0], VELOCITY_X))
-        unknowns.append(Dof(self.geometry[0], VELOCITY_Y))
+        unknowns.append(Dof(self.geometry[0], DISPLACEMENT_X))  ## added by Andreas Riedl
+        unknowns.append(Dof(self.geometry[0], DISPLACEMENT_Y))  ## added by Andreas Riedl
+        unknowns.append(Dof(self.geometry[0], ROTATION))  ## added by Andreas Riedl
         return unknowns
 
     def EquationId(self):
         equation_ids = []
-        equation_ids.append(self.geometry[0].EquationId(VELOCITY_X))
-        equation_ids.append(self.geometry[0].EquationId(VELOCITY_Y))
+        equation_ids.append(self.geometry[0].EquationId(DISPLACEMENT_X))    ## added by Andreas Riedl
+        equation_ids.append(self.geometry[0].EquationId(DISPLACEMENT_Y))    ## added by Andreas Riedl
+        equation_ids.append(self.geometry[0].EquationId(ROTATION))    ## added by Andreas Riedl
         return equation_ids
 
     def GetValues(self, step=0):
         values = zeros(self.GetDofsPerNode()*self.geometry.GetNumberOfNodes())
-        values[0] = self.geometry[0].GetSolutionStepValue(VELOCITY_X, step)
-        values[1] = self.geometry[0].GetSolutionStepValue(VELOCITY_Y, step)
+        values[0] = self.geometry[0].GetSolutionStepValue(DISPLACEMENT_X, step) ## added by Andreas Riedl
+        values[1] = self.geometry[0].GetSolutionStepValue(DISPLACEMENT_Y, step) ## added by Andreas Riedl
+        values[2] = self.geometry[0].GetSolutionStepValue(ROTATION, step) ## added by Andreas Riedl
         return values
 
 
