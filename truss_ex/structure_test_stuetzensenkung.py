@@ -24,8 +24,8 @@ solution_step_variables = [
 #         5
 
 property_list = { 
-    0: {YOUNG_MODULUS: 210e9,   # in N/m^2
-        SECTION_TYPE:  0.001885, # in m^2
+    0: {YOUNG_MODULUS: 210e9,       # in N/m^2 (steel 210000 N/mm²) 
+        SECTION_TYPE:  84.5e-4,     # in m^2   (IPE 400)     
         }
 }
 
@@ -62,10 +62,10 @@ DISPLACEMENT_X: [
 DISPLACEMENT_Y: [
     [0, True, 0.0],
     [2, True, 0.0],
-    [5, True, 0.2],
+    [5, True, 0.2], #Stützensenkung um 0.2 m
     ],
 EXTERNAL_FORCE_Y: [
-    [1, True, 000],  #[nodeID, fixity, imposed value in N]
+    [1, True, 10000],  #[nodeID, fixity, imposed value in N]
 ],
 }
 
@@ -106,7 +106,7 @@ strategy.Solve()
 # plot_contour.PlotContour(model_part.NodeIterators(), DISPLACEMENT_Y, "disp_DISPLACEMENT_Y.png" )
 
 import plot_system
-scale = 10
+scale = 1
 plot_system.PlotSystem(model_part.NodeIterators(), model_part.ElementIterators(), DISPLACEMENT, "plot_DISPLACEMENT.png", scale)
 
 # import plot_internal_forces

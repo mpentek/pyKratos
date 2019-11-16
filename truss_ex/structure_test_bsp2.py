@@ -33,8 +33,8 @@ node_list = {
 }
 
 property_list = { 
-    0: {YOUNG_MODULUS: 210e9,   # in N/m^2
-        SECTION_TYPE:  0.001885, # in m^2
+    0: {YOUNG_MODULUS: 210e9,       # in N/m^2 (steel 210000 N/mm²) 
+        SECTION_TYPE:  84.5e-4,     # in m^2   (IPE 400)     
         }
 }
 
@@ -68,7 +68,7 @@ DISPLACEMENT_Y: [
     [4, True, 0.0],
     ],
 EXTERNAL_FORCE_Y: [
-    [3, True, 10000],  #[nodeID, fixity, imposed value in N]
+    [3, True, 100000],  #[nodeID, fixity, imposed value in N]
     [7, True, 000],
 ],
 }

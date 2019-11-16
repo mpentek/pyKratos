@@ -33,8 +33,8 @@ node_list = {
 }
 
 property_list = { 
-    0: {YOUNG_MODULUS: 210e9,   # in N/mm^2
-        SECTION_TYPE:  0.001885,  # in m^2 -> Rundstab d = 8mm
+    0: {YOUNG_MODULUS: 210e9,       # in N/m^2 (steel 210000 N/mm²) 
+        SECTION_TYPE:  84.5e-4,     # in m^2   (IPE 400)     
         }
 }
 
@@ -62,8 +62,8 @@ DISPLACEMENT_Y: [
     [3, True, 0.0],
     ],
 EXTERNAL_FORCE_Y: [
-    [1, True, 5000],    # in N
-    [2, True, 5000],
+    [1, True, 50000],    # in N
+    [2, True, 50000],
 ],
 }
 
@@ -104,7 +104,7 @@ strategy.Solve()
 # plot_contour.PlotContour(model_part.NodeIterators(), DISPLACEMENT_Y, "disp_DISPLACEMENT_Y.png" )
 
 import plot_system
-scale = 10
+scale = 1000
 plot_system.PlotSystem(model_part.NodeIterators(), model_part.ElementIterators(), DISPLACEMENT, "plot_DISPLACEMENT.png", scale)
 
 # import plot_internal_forces

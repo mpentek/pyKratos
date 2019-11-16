@@ -22,8 +22,8 @@ solution_step_variables = [
 #   0   2   4
 
 property_list = { 
-    0: {YOUNG_MODULUS: 210e9,      #in N/m^2
-        SECTION_TYPE:  0.001885,    # in m^2 -> Rundstab d = 8mm
+    0: {YOUNG_MODULUS: 210e9,       # in N/m^2 (steel 210000 N/mm²) 
+        SECTION_TYPE:  84.5e-4,     # in m^2   (IPE 400)     
         }
 }
 
@@ -64,7 +64,7 @@ EXTERNAL_FORCE_Y: [
     [3, True, 40000],
 ],
 EXTERNAL_FORCE_X: [
-    [1, True, 1000],
+    [1, True, 10000],
 ]
 }
 
@@ -107,7 +107,7 @@ for i in range(0,2):
 # plot_contour.PlotContour(model_part.NodeIterators(), DISPLACEMENT_Y, "disp_DISPLACEMENT_Y.png" )
 
 import plot_system
-scale = 100
+scale = 1000
 plot_system.PlotSystem(model_part.NodeIterators(), model_part.ElementIterators(), DISPLACEMENT, "plot_DISPLACEMENT.png", scale)
 
 # import plot_internal_forces
