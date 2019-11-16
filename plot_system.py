@@ -27,9 +27,9 @@ def PlotSystem(Nodes, Elements, variable, name, scale):
     ax = fig.add_subplot(111)
 
     x = []  # preallocation
-    y = []
-    x_val = []  # preallocation
-    y_val = []
+    y = []    
+    x_node = []  # preallocation
+    y_node = []    
 
     for element in Elements:
         # original coordinates -> 2D Line inbetween
@@ -46,17 +46,24 @@ def PlotSystem(Nodes, Elements, variable, name, scale):
         [x_def, y_def] = element.CalculateDeflectionCurve(scale)
         plt.plot(x_def,y_def,'k')
 
-        x.extend([x_1, x_2])   #x and y vector with all coordinates
+        # collect values for min/max limit
+        x.extend([x_1, x_2])    # original nodes
         y.extend([y_1, y_2])
-        x_val.extend(x_def)   #val vector für min and max
-        y_val.extend(y_def)
+        x.extend(x_def)         # deflected nodes
+        y.extend(y_def)
 
-    xmin = math.floor(min(x_val))   # set min and max values
-    xmax = math.ceil(max(x_val))
+        # collect values for node plot
+        x_node.extend([x_1, x_2])   # original nodes
+        y_node.extend([y_1, y_2])
+        x_node.extend([ x_def[0], x_def[len(x_def)-1] ])        # deflected nodes
+        y_node.extend([ y_def[0], y_def[len(y_def)-1] ])
+
+    xmin = math.floor(min(x))   # set min and max values
+    xmax = math.ceil(max(x))
     xmin = xmin - math.ceil((xmax-xmin)/10)
     xmax = xmax + math.ceil((xmax-xmin)/10)
-    ymin = math.floor(min(y_val))
-    ymax = math.ceil(max(y_val))
+    ymin = math.floor(min(y))
+    ymax = math.ceil(max(y))
     ymin = ymin - math.ceil((ymax-ymin)/10)
     ymax = ymax + math.ceil((ymax-ymin)/10)
 
@@ -70,7 +77,7 @@ def PlotSystem(Nodes, Elements, variable, name, scale):
     ax.set_yticks(np.arange(ymin, ymax, 1))
     plt.grid()
 
-    plt.scatter(x, y, marker='o', c='r', s=5)   # draw nodes
+    plt.scatter(x_node, y_node, marker='o', c='r', s=5)   # draw nodes
     plt.title('%d nodes, %d elements, scale = %d' % (nnodes, nelements, scale) )    # set title
     plt.axes().set_aspect('equal')  # equalize axes
 
