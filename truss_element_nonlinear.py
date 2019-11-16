@@ -57,40 +57,26 @@ class TrussElement:
         x_1 = self.geometry.nodes[0].coordinates[0]
         y_1 = self.geometry.nodes[0].coordinates[1]
         x_2 = self.geometry.nodes[1].coordinates[0]
-        y_2 = self.geometry.nodes[1].coordinates[1]
+        y_2 = self.geometry.nodes[1].coordinates[1] 
 
         # displacement
         u_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_X"]
         w_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_Y"]
         u_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_X"]
-        w_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_Y"]
+        w_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_Y"] 
 
-        # preforming, imposed values    NOT IMPLEMENTED!
-        #u0_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_X"]
-        #w0_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_Y"]
-        #u0_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_X"]
-        #w0_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_Y"]
-
-        # length, sin, cos
-        length_0 = math.sqrt((x_2 - x_1)**2 + (y_2 - y_1)**2)   # original length
-        length = math.sqrt((x_2+u_2-x_1-u_1)**2 + (y_2+w_2-y_1-w_1)**2) # current length
+       # length, sin, cos
+        length_0 = math.sqrt((x_2 - x_1)**2 + (y_2 - y_1)** 2)   # original length
+        length = math.sqrt((x_2+u_2-x_1-u_1)**2 + (y_2+w_2-y_1-w_1)**2)  # current length
         #print([length_0, length])
         c = (x_2 + u_2 - x_1 - u_1)/ length # cos_alpha
         s = (y_2 + w_2 - y_1 - w_1)/ length # sin_alpha    
         alpha = (arcsin(s)*180)/pi 
 
 
-        # transformation matrix
-        T = array([ [c, s, 0, 0],
-                    [-s, c, 0, 0],
-                    [0, 0, c, s],
-                    [0, 0, -s, c] ])
+        tension = (E*A)/length_0 * ((u_2-u_1)*c + (w_2-w_1)*s) + (E*A)/(2*length_0**2) * ((u_1-u_2)*s + (w_2-w_1)*c)**2
 
-        self.T = T
-
-        tension = (E*A)/length_0 *((u_2-u_1)*c + (w_2-w_1)*s) + (E*A)/(2*length_0**2) * ((u_1-u_2)*s + (w_2-w_1)*c)**2
-
-        #loop over all gauss points
+        # loop over all gauss points
         for gauss in range(0, number_of_gauss):
             N = Ns[gauss]
             N_derivate = derivatives[gauss]
@@ -109,33 +95,129 @@ class TrussElement:
             # local load vector - qx TRANSFER NOT IMPLEMENTED
             qx = 0
             for i in range(0, 2):
-                RHSstatic[2*i] += qx * N[i] * GPW #GPW = WGP * L            
-        
+                for j in range(0, 2):
+                    K_geo[(2*i)+1, (2*j)+1] += N_derivate[i] * N_derivate[j] * \
+                        tension * GPW * length_0/length  # GPW = WGP * L
+
         # local stiffness matrix
         K_static = K_ele + K_geo
-        self.K_static_last = K_static # save newest K for sgr calculation
-        # global stiffness matrix
-        K_glob = dot(transpose(T),dot(K_static,T))
-        
-        # global load vector
-        RHSstatic_glob = dot(transpose(T),RHSstatic)
 
-        ## preforming - NOT IMPLEMENTED
-        #preforming = array([u0_1, w0_1, u0_2, w0_2])        
-        #RHS_preforming = dot(K_glob, preforming)        
-        #RHSstatic_glob = RHSstatic_glob + RHS_preforming
-        
-        return [K_glob, RHSstatic_glob]  
-    
-        # called from each element and added to the system matrix
-    def CalculateLocalSystem(self,ProcessInfo):
-        K_glob, RHSstatic = self._ComputeStiffnessContribution(ProcessInfo)
+        return [K_static, RHSstatic]
+
+        # this function computes the selfweight of the beam for the RHS
+    def _CalculateSelfWeight(self, ProcessInfo):
+
+        RHSstatic = zeros(4)    # preallocate load vector  
+
+        order = self.integration_order
+        [gpc, weights] = self.geometry.GaussPoints(order=1)        
+        [Ns, derivatives] = self.geometry.ShapeFunctionsLinear(gpc)    
                
-        RHS = RHSstatic
-        LHS = K_glob
+        number_of_gauss = len(gpc)
+        A = self.prop[SECTION_TYPE]     # in m^            
 
-        
-        return [LHS,RHS]
+         # try Self weight in X Dir
+        try:
+            force_x = self.prop[BODY_FORCE_X] #in m/s^2
+            density = self.prop[DENSITY]      #in kg/m^3         
+
+            qx_glob = density * A * force_x
+            
+        except:
+            qx_glob = 0
+            print("No Selfweight in X-Dir")
+
+        # try Self weight in Y Dir
+        try:
+            force_y = self.prop[BODY_FORCE_Y] #in m/s^2
+            density = self.prop[DENSITY]      #in kg/m^3         
+
+            qy_glob = density * A * force_y
+
+        except:
+            qy_glob = 0
+            print("No Selfweight in Y-Dir")
+       
+       
+        # transfer Selfweight in Lokal Forces
+        lokal_val = dot(self.T[0:3,0:3],[qx_glob, qy_glob,0])
+        qx_lok = lokal_val[0]
+        qy_lok = lokal_val[1]
+
+        #loop over all gauss points                
+        for gauss in range(0, number_of_gauss):
+            N = Ns[gauss]
+            GPW = weights[gauss]
+
+            # local load vector - selfweight
+            for i in range(0, 2):
+                RHSstatic[2*i] += qx_lok * N[i] * GPW  # GPW = WGP * L
+
+            for i in range(0, 2):
+                RHSstatic[(2*i)+1] += qy_lok * N[i] * GPW  # GPW = WGP * L 
+
+        return RHSstatic
+
+        # called from each element and added to the system matrix
+    def CalculateLocalSystem(self, ProcessInfo):
+        self._CalculateTransformationMatrix()
+
+        RHS_selfweight = self._CalculateSelfWeight(ProcessInfo)
+
+        K_lok, RHSstatic = self._ComputeStiffnessContribution(ProcessInfo)
+
+        RHS_lok = RHSstatic + RHS_selfweight   
+
+        # global stiffness matrix
+        K_glob = dot(transpose(self.T), dot(K_lok, self.T))
+
+        # global load vector
+        RHS_glob = dot(transpose(self.T), RHS_lok)
+
+        # # preforming, imposed values
+        # u0_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_X"]
+        # w0_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_Y"]
+        # u0_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_X"]
+        # w0_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_Y"]
+
+        # # preforming
+        # preforming = array([u0_1, w0_1, u0_2, w0_2])
+        # RHS_preforming = -dot(K_glob, preforming)
+        # RHS_glob = RHS_glob + RHS_preforming
+
+        self.K_static_last = K_lok  # save newest local K for sgr calculation
+
+        return [K_glob, RHS_glob]
+
+    def _CalculateTransformationMatrix(self):
+    
+       # coordinates
+        x_1 = self.geometry.nodes[0].coordinates[0]
+        y_1 = self.geometry.nodes[0].coordinates[1]
+        x_2 = self.geometry.nodes[1].coordinates[0]
+        y_2 = self.geometry.nodes[1].coordinates[1] 
+
+        # displacement
+        u_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_X"]
+        w_1 = self.geometry.nodes[0].variables[0]["DISPLACEMENT_Y"]
+        u_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_X"]
+        w_2 = self.geometry.nodes[1].variables[0]["DISPLACEMENT_Y"] 
+
+       # length, sin, cos
+        length_0 = math.sqrt((x_2 - x_1)**2 + (y_2 - y_1)** 2)   # original length
+        length = math.sqrt((x_2+u_2-x_1-u_1)**2 + (y_2+w_2-y_1-w_1)**2)  # current length
+        #print([length_0, length])
+        c = (x_2 + u_2 - x_1 - u_1) / length  # cos_alpha
+        s = (y_2 + w_2 - y_1 - w_1) / length  # sin_alpha
+        alpha = (arcsin(s)*180)/pi
+
+        # transformation matrix
+        T = array([[c, s, 0, 0],
+                   [-s, c, 0, 0],
+                   [0, 0, c, s],
+                   [0, 0, -s, c]])
+
+        self.T = T
 
         # this function returns a list with the node and unkowns to be solved for
     def GetDofList(self):
