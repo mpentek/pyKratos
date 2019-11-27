@@ -117,6 +117,19 @@ class ModelPart:
                 if entry[1] == True:
                     node.Fix(var)
 
+    def AddElementValues(self, element_values):
+        for var, values in list(element_values.items()):
+            for entry in values:
+                element = self.Elements[entry[0]]
+                # apply values
+                element.SetSolutionStepValue(var, 0, entry[2])
+
+                # fix if required
+                # if entry[1] == True:
+                #     node.Fix(var)
+
+
+
     def WriteMesh(self):
         pass
 
